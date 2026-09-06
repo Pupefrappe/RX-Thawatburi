@@ -657,8 +657,8 @@ async function submitForm() {
 
   try {
     // ส่งข้อมูลแบบ GET (เหมือน dashboard) — ผ่าน CORS แน่นอน
-    const saveUrl = `${scriptUrl}?action=save&data=${encodeURIComponent(JSON.stringify(payload))}`;
-    const res = await fetch(saveUrl);
+    const saveUrl = `${scriptUrl}?action=save&t=${Date.now()}&data=${encodeURIComponent(JSON.stringify(payload))}`;
+    const res = await fetch(saveUrl, { cache: 'no-store' });
     const result = await res.json();
     if (!result.success) throw new Error(result.error || 'บันทึกไม่สำเร็จ');
 
