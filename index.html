@@ -1016,10 +1016,12 @@ function genId() {
   return 'DUE-' + y + '-' + String(Math.floor(Math.random() * 99999) + 1).padStart(5, '0');
 }
 
-// ─── POST via no-cors (fire-and-forget, avoids CORS block) ─
-async function postToGAS(params) {
-  await fetch(GAS_URL, { method: 'POST', body: params, mode: 'no-cors' });
-  // response is opaque with no-cors — we assume success and show optimistic UI
+// ─── ส่งข้อมูลผ่าน GET (หลีกเลี่ยง POST redirect ของ GAS) ──
+async function sendToGAS(action, dataObj) {
+  const url = GAS_URL + '?action=' + encodeURIComponent(action)
+            + '&data=' + encodeURIComponent(JSON.stringify(dataObj));
+  const resp = await fetch(url);
+  return resp.json();
 }
 
 // ─── Doctor form submit ────────────────────────────────────
@@ -1036,36 +1038,36 @@ async function submitDoctor(e) {
 
   const id = genId();
 
-  const params = new URLSearchParams();
-  params.append('action',       'submitDoctor');
-  params.append('id',           id);
-  params.append('hn',           fd.get('hn')            || '');
-  params.append('an',           fd.get('an')            || '');
-  params.append('patientName',  fd.get('patientName')   || '');
-  params.append('age',          fd.get('age')           || '');
-  params.append('ward',         fd.get('ward')          || '');
-  params.append('diagnosis',    fd.get('diagnosis')     || '');
-  params.append('cultures',     JSON.stringify(cultures));
-  params.append('culturesOther',fd.get('culturesOther') || '');
-  params.append('augmentin',      fd.get('augmentin')     === 'true' ? 'true' : 'false');
-  params.append('augmentinType',  fd.get('augmentinType') || '');
-  params.append('augmentinNote',  fd.get('augmentinNote') || '');
-  params.append('cipro',          fd.get('cipro')         === 'true' ? 'true' : 'false');
-  params.append('ciproType',      fd.get('ciproType')     || '');
-  params.append('ciproNote',      fd.get('ciproNote')     || '');
-  params.append('levo',           fd.get('levo')          === 'true' ? 'true' : 'false');
-  params.append('levoType',       fd.get('levoType')      || '');
-  params.append('levoNote',       fd.get('levoNote')      || '');
-  params.append('clarithro',      fd.get('clarithro')     === 'true' ? 'true' : 'false');
-  params.append('clarithroType',  fd.get('clarithroType') || '');
-  params.append('clarithroNote',  fd.get('clarithroNote') || '');
-  params.append('antibioticOrdered', fd.get('antibioticOrdered') || '');
-  params.append('doctorName',    fd.get('doctorName')    || '');
-  params.append('doctorDate',    fd.get('doctorDate')    || '');
+  const docData = {
+    id:               id,
+    hn:               fd.get('hn')            || '',
+    an:               fd.get('an')            || '',
+    patientName:      fd.get('patientName')   || '',
+    age:              fd.get('age')           || '',
+    ward:             fd.get('ward')          || '',
+    diagnosis:        fd.get('diagnosis')     || '',
+    cultures:         cultures,
+    culturesOther:    fd.get('culturesOther') || '',
+    augmentin:        fd.get('augmentin') === 'true',
+    augmentinType:    fd.get('augmentinType') || '',
+    augmentinNote:    fd.get('augmentinNote') || '',
+    cipro:            fd.get('cipro') === 'true',
+    ciproType:        fd.get('ciproType')     || '',
+    ciproNote:        fd.get('ciproNote')     || '',
+    levo:             fd.get('levo') === 'true',
+    levoType:         fd.get('levoType')      || '',
+    levoNote:         fd.get('levoNote')      || '',
+    clarithro:        fd.get('clarithro') === 'true',
+    clarithroType:    fd.get('clarithroType') || '',
+    clarithroNote:    fd.get('clarithroNote') || '',
+    antibioticOrdered: fd.get('antibioticOrdered') || '',
+    doctorName:       fd.get('doctorName')    || '',
+    doctorDate:       fd.get('doctorDate')    || ''
+  };
 
   setLoading('doc', true);
   try {
-    await postToGAS(params);
+    await sendToGAS('doctor', docData);
     toast('✅ บันทึกสำเร็จ — ' + id, 'ok');
     form.reset();
     ['augmentin','cipro','levo','clarithro'].forEach(d => {
@@ -1221,17 +1223,17 @@ async function submitPharmacist(e) {
 
   const form   = e.target;
   const fd     = new FormData(form);
-  const params = new URLSearchParams();
-  params.append('action',       'submitPharmacist');
-  params.append('an',           fd.get('an')          || '');
-  params.append('pharmResult',  fd.get('pharmResult') || '');
-  params.append('pharmReason',  fd.get('pharmReason') || '');
-  params.append('pharmName',    fd.get('pharmName')   || '');
-  params.append('pharmDate',    fd.get('pharmDate')   || '');
+  const pharmData = {
+    an:          fd.get('an')          || '',
+    pharmResult: fd.get('pharmResult') || '',
+    pharmReason: fd.get('pharmReason') || '',
+    pharmName:   fd.get('pharmName')   || '',
+    pharmDate:   fd.get('pharmDate')   || ''
+  };
 
   setLoading('pharm', true);
   try {
-    await postToGAS(params);
+    await sendToGAS('pharmacist', pharmData);
     toast('✅ บันทึกผลการประเมินเรียบร้อย', 'ok');
     clearSearch();
   } catch(err) {
